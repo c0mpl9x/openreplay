@@ -1,0 +1,52 @@
+name: Feature request
+description: Propose a focused improvement to the local 2D viewer.
+title: '[Feature]: '
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        v0.1 is intentionally limited to local, uncompressed Mirage GOTV demos up to 500 MiB on desktop Chrome/Edge/Firefox.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem would this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the interaction and observable result, not only an implementation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope impact
+      options:
+        - Fits the current Mirage/local-only v0.1 scope
+        - Expands the supported demo or browser scope
+        - Requires network, storage, accounts, or a backend
+    validations:
+      required: true
+
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy, security, and licensing impact
+      description: Explain new network behavior, data retention, parser risk, or third-party assets. Write "None" when applicable.
+    validations:
+      required: true

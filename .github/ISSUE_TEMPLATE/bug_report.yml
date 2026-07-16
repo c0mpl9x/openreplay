@@ -1,0 +1,79 @@
+name: Bug report
+description: Report a reproducible problem without sharing a private demo.
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Never attach a private `.dem` or unredacted match data. Use a synthetic fixture or describe the minimum relevant structure.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Paste the deployed version or commit SHA where the issue occurs.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Edge
+        - Firefox
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and operating-system versions
+      placeholder: Firefox 128 on Windows 11
+    validations:
+      required: true
+
+  - type: input
+    id: demo_shape
+    attributes:
+      label: Demo characteristics
+      description: Include GOTV/POV, map, approximate size, and whether it is an uncompressed CS2 demo. Do not attach it.
+      placeholder: GOTV, de_mirage, 240 MiB, uncompressed
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: Describe the smallest sequence that consistently triggers the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the public error code and redacted console output when relevant.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I have not included a private demo, personal data, or unredacted match data.
+          required: true
+        - label: This is a bug report, not a vulnerability report. Security issues are reported privately under SECURITY.md.
+          required: true

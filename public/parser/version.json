@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "upstreamRepository": "https://github.com/LaihoE/demoparser.git",
+  "upstreamCommit": "ba39cc44cd5abfd7f34df2b3c0a7dd3630048311",
+  "wasmPackVersion": "wasm-pack 0.15.0",
+  "wasmBindgenCliVersion": "0.2.100",
+  "buildDriver": "wasm-pack 0.15.0 in CI; exact Cargo plus wasm-bindgen 0.2.100 compatibility path on locked-down Windows",
+  "buildAdjustment": "Uses protobuf.rs, message_type.rs and maps.rs committed at the pinned upstream revision instead of a moving clone or nested generator, removes the unused wasm-bindgen-file-reader dependency, and compiles every Instant::now profiler plus its elapsed-time read out of the isolated wasm32 build.",
+  "artifacts": [
+    {
+      "path": "public/parser/demoparser2.js",
+      "bytes": 18999,
+      "sha256": "87a136dccb1691e67f466bf45f0baaef6c64283a07572b77f9e4515398646471"
+    },
+    {
+      "path": "public/parser/demoparser2_bg.wasm",
+      "bytes": 3049541,
+      "sha256": "786d53da0b46cbf4cbea2f5eed721b2a50e2419181c25c336002c447a35bbcfb"
+    }
+  ]
+}

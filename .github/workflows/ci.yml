@@ -1,0 +1,173 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Upload failed unit-test report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-report
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  parser:
+    name: Parser integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository and parser source
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify committed parser artifacts
+        run: npm run parser:verify
+
+      - name: Detect pinned parser source
+        id: parser-source
+        shell: bash
+        run: |
+          if [[ -f vendor/demoparser/src/wasm/Cargo.toml ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Pinned parser source is absent; verifying committed browser artifacts."
+          fi
+
+      - name: Install Rust toolchain
+        if: steps.parser-source.outputs.available == 'true'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: rust@1.97.0 + wasm32-unknown-unknown
+          fallback: none
+
+      - name: Rebuild parser from pinned source
+        if: steps.parser-source.outputs.available == 'true'
+        run: npm run parser:build
+
+      - name: Verify rebuilt parser artifacts
+        if: steps.parser-source.outputs.available == 'true'
+        run: npm run parser:verify
+
+      - name: Reject parser artifact drift
+        if: steps.parser-source.outputs.available == 'true'
+        run: >-
+          git diff --exit-code --
+          public/parser/demoparser2.js
+          public/parser/demoparser2_bg.wasm
+          public/parser/version.json
+
+  build:
+    name: Production build
+    needs: [quality, parser]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build
+
+  e2e:
+    name: E2E (${{ matrix.browser }})
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build static site
+        run: npm run build
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e -- --project=${{ matrix.browser }}
+
+      - name: Upload failed Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-${{ matrix.browser }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

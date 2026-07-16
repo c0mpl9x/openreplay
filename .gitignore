@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.vite/
+.cache/
+.tools/
+.DS_Store
+*.local
+*.log
+*.dem
+fixtures/private/
+.reference/
