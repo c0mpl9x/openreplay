@@ -26,19 +26,14 @@ The initial commit may be pushed before this ruleset exists. After the ruleset
 is active, normal changes must use a pull request and pass every required check.
 Do not configure a routine bypass for the sole maintainer.
 
-## Multi-maintainer mode
+## GitHub platform settings
 
-When a second maintainer is available, add the following requirements:
-
-- require at least one approval before merging;
-- dismiss stale approvals after new commits;
-- prevent bypass except for an explicitly documented emergency maintainer path.
-
-Also configure [**Settings → Pages**](https://github.com/c0mpl9x/openreplay/settings/pages)
+Configure [**Settings → Pages**](https://github.com/c0mpl9x/openreplay/settings/pages)
 → **Build and deployment → Source** to **GitHub Actions**, then protect the
 `github-pages` environment so only `main` can deploy.
-The `Pages` workflow itself is triggered only by a successful `CI` run on
-`main`, checks out that run's exact commit, and requests only `pages: write` and
+
+The `Pages` workflow is triggered only by a successful `CI` run on `main`,
+checks out that run's exact commit, and requests only `pages: write` and
 `id-token: write` for its deployment job.
 
 Enable
@@ -46,6 +41,14 @@ Enable
 so the private reporting route documented in `SECURITY.md` is available. Enable
 Dependabot alerts/security updates alongside the version-update configuration
 tracked in `.github/dependabot.yml`.
+
+## Multi-maintainer mode
+
+When a second maintainer is available, add the following requirements:
+
+- require at least one approval before merging;
+- dismiss stale approvals after new commits;
+- prevent bypass except for an explicitly documented emergency maintainer path.
 
 Review this file whenever a workflow or job display name changes; required check
 names must match exactly or merges will remain blocked.
