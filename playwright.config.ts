@@ -6,7 +6,7 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   // Real parser cases can peak around 450 MiB each. Serial workers keep the
-  // two-browser suite representative without multiplying that memory cost.
+  // Keep the three-browser suite representative without multiplying that memory cost.
   workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
@@ -17,6 +17,7 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: {
     command: 'npm run preview -- --host 127.0.0.1',

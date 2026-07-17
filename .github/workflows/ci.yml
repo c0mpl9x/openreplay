@@ -146,7 +146,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, firefox]
+        browser: [chromium, firefox, webkit]
     steps:
       - name: Check out repository
         uses: actions/checkout@v6

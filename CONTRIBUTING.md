@@ -13,7 +13,7 @@ git clone --recurse-submodules https://github.com/c0mpl9x/openreplay.git
 cd openreplay
 npm ci
 npm run parser:verify
-npx playwright install chromium firefox
+npx playwright install chromium firefox webkit
 npm run dev
 ```
 
@@ -49,8 +49,8 @@ npm run test:e2e
 
 Unit changes should cover validation, round pairing, sampling, coordinates,
 side changes, interpolation, events, and Worker errors as applicable. UI flows
-should use synthetic replay fixtures in Playwright and pass in Chromium and
-Firefox. The sole real-file integration fixture is the public `test_demo.dem`
+should use synthetic replay fixtures in Playwright and pass in Chromium,
+Firefox, and WebKit. The sole real-file integration fixture is the public `test_demo.dem`
 already tracked inside the pinned upstream parser submodule.
 
 ## Parser and asset changes

@@ -69,16 +69,19 @@ Useful commands:
 | `npm run typecheck`     | Run strict TypeScript checks                           |
 | `npm run test:unit`     | Run Vitest with coverage thresholds                    |
 | `npm run build`         | Type-check and produce the static site in `dist/`      |
-| `npm run test:e2e`      | Run Playwright in Chromium and Firefox                 |
+| `npm run test:e2e`      | Run Playwright in Chromium, Firefox, and WebKit        |
 | `npm run parser:verify` | Validate parser files, metadata, and recorded hashes   |
 | `npm run parser:build`  | Rebuild browser bindings from the pinned parser source |
 
 Install Playwright browsers once before the first local end-to-end run:
 
 ```bash
-npx playwright install chromium firefox
+npx playwright install chromium firefox webkit
 npm run test:e2e
 ```
+
+WebKit coverage is the local browser-compatibility gate for the v0.2 work;
+validation in a real Safari installation remains a separate release check.
 
 ## Parser artifacts and reproducibility
 
@@ -177,8 +180,8 @@ the private pre-release acceptance pass or a dedicated 500 MiB stress test.
 ## CI and deployment
 
 Every pull request and push runs formatting, lint, type checks, unit tests,
-parser verification/rebuild, the production build, and Playwright in Chromium
-and Firefox. Failed test reports are retained for seven days. CodeQL and weekly
+parser verification/rebuild, the production build, and Playwright in Chromium,
+Firefox, and WebKit. Failed test reports are retained for seven days. CodeQL and weekly
 Dependabot updates cover the TypeScript/JavaScript and workflow supply chain.
 
 The zero-cost setup assumes a public repository: GitHub Pages is available on
