@@ -138,15 +138,11 @@ jobs:
       - name: Build static site
         run: npm run build
 
-  e2e:
-    name: E2E (${{ matrix.browser }})
+  e2e-chromium:
+    name: E2E (chromium)
     needs: [build]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -163,19 +159,99 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browser
-        run: npx playwright install --with-deps ${{ matrix.browser }}
+        run: npx playwright install --with-deps chromium
 
       - name: Build static site
         run: npm run build
 
       - name: Run end-to-end tests
-        run: npm run test:e2e -- --project=${{ matrix.browser }}
+        run: npm run test:e2e -- --project=chromium
 
       - name: Upload failed Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-${{ matrix.browser }}
+          name: playwright-chromium
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  e2e-firefox:
+    name: E2E (firefox)
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps firefox
+
+      - name: Build static site
+        run: npm run build
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e -- --project=firefox
+
+      - name: Upload failed Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-firefox
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  e2e-webkit:
+    name: E2E (webkit)
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps webkit
+
+      - name: Build static site
+        run: npm run build
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e -- --project=webkit
+
+      - name: Upload failed Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-webkit
           path: |
             playwright-report/
             test-results/
