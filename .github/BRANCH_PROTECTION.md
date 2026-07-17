@@ -18,6 +18,7 @@ Until a second maintainer is available, configure the ruleset to:
   - `Production build`
   - `E2E (chromium)`
   - `E2E (firefox)`
+  - `E2E (webkit)`
   - `Analyze JavaScript and TypeScript`
 - do not require an approval, because the sole maintainer cannot approve their
   own pull request.
