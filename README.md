@@ -170,6 +170,15 @@ uses `test_demo.dem`, a public Mirage fixture already tracked and licensed
 inside the pinned `demoparser2` submodule; it is not copied into the root
 repository or published as user data. Private demos remain strictly excluded.
 
+For a local-only acceptance run with a private demo, set
+`OPENREPLAY_PRIVATE_DEMO` to a file under `fixtures/private/`. The optional
+Playwright check is skipped in CI and never publishes the file:
+
+```powershell
+$env:OPENREPLAY_PRIVATE_DEMO = 'fixtures/private/your-demo.dem'
+npm run test:e2e -- --project=chromium --grep 'private acceptance'
+```
+
 The current pinned artifact was also exercised end to end against that
 60,601,900-byte fixture: 10 players, 10 rounds, 71 match events, 5,157 sampled
 frames, and 51,531 finite present-player states were normalized in about 1.03

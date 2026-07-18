@@ -1,9 +1,13 @@
-import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { copyFileSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { basename, resolve } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
 const demoPath = resolve('vendor/demoparser/src/parser/test_demo.dem');
+const privateDemoPath = process.env.OPENREPLAY_PRIVATE_DEMO
+  ? resolve(process.env.OPENREPLAY_PRIVATE_DEMO)
+  : undefined;
+const MAX_LOCAL_DEMO_BYTES = 500 * 1024 * 1024;
 
 function mutatedPublicDemo(search: string, replacement: string, outputPath: string): string {
   const demo = readFileSync(demoPath);
@@ -19,7 +23,9 @@ function mutatedPublicDemo(search: string, replacement: string, outputPath: stri
 test.describe('real demoparser2 integration', () => {
   test.setTimeout(120_000);
 
-  test('parses the pinned public Mirage fixture entirely on localhost', async ({ page }) => {
+  test('parses the pinned public Mirage fixture entirely on localhost', async ({
+    page,
+  }, testInfo) => {
     const externalRequests: string[] = [];
     const writes: string[] = [];
     page.on('request', (request) => {
@@ -44,6 +50,58 @@ test.describe('real demoparser2 integration', () => {
     });
     expect(externalRequests).toEqual([]);
     expect(writes).toEqual([]);
+
+    await page.getByRole('button', { name: 'New demo' }).click();
+    const secondDemoPath = testInfo.outputPath('second-mirage.dem');
+    copyFileSync(demoPath, secondDemoPath);
+    await page.getByLabel('Choose a CS2 GOTV demo').setInputFiles(secondDemoPath);
+    await expect(page.getByRole('img', { name: 'Mirage replay radar' })).toBeVisible({
+      timeout: 90_000,
+    });
+    await expect(page.getByText('second-mirage.dem')).toBeVisible();
+  });
+
+  test('parses an optional local private acceptance demo', async ({ page }) => {
+    if (privateDemoPath === undefined) {
+      test.skip(true, 'Set OPENREPLAY_PRIVATE_DEMO to run the local-only acceptance check.');
+      return;
+    }
+
+    const { size } = statSync(privateDemoPath);
+    expect(size).toBeGreaterThan(0);
+    expect(size).toBeLessThanOrEqual(MAX_LOCAL_DEMO_BYTES);
+    const fileName = basename(privateDemoPath);
+    const externalRequests: string[] = [];
+    const writes: string[] = [];
+    page.on('request', (request) => {
+      const url = new URL(request.url());
+      if (url.hostname !== '127.0.0.1') externalRequests.push(request.url());
+      if (!['GET', 'HEAD'].includes(request.method()))
+        writes.push(`${request.method()} ${request.url()}`);
+    });
+    const parsePrivateDemo = async (): Promise<number> => {
+      const startedAt = Date.now();
+      await page.getByLabel('Choose a CS2 GOTV demo').setInputFiles(privateDemoPath);
+
+      await expect(page.getByRole('img', { name: 'Mirage replay radar' })).toBeVisible({
+        timeout: 90_000,
+      });
+      await expect(page.getByText(fileName)).toBeVisible();
+      return Date.now() - startedAt;
+    };
+
+    await page.goto('./');
+    const firstDuration = await parsePrivateDemo();
+    await page.getByRole('button', { name: 'New demo' }).click();
+    const secondDuration = await parsePrivateDemo();
+    expect(externalRequests).toEqual([]);
+    expect(writes).toEqual([]);
+    console.log(
+      `[private acceptance] ${fileName}: first ${firstDuration} ms, second ${secondDuration} ms, ${size} bytes`,
+    );
+
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Drop your .dem file here' })).toBeVisible();
   });
 
   test('rejects a non-Mirage Source 2 header with a public error', async ({ page }, testInfo) => {
@@ -70,6 +128,10 @@ test.describe('real demoparser2 integration', () => {
 
     await expect(page.getByRole('alert')).toContainText('INVALID_DEMO', { timeout: 90_000 });
     await expect(page.getByRole('alert')).toContainText(/corrupt|truncated|incomplete/iu);
+
+    await page.getByRole('button', { name: 'Open another demo' }).click();
+    await page.getByRole('button', { name: 'Preview sample replay' }).click();
+    await expect(page.getByRole('img', { name: 'Mirage replay radar' })).toBeVisible();
   });
 
   test('rejects a public demo marked as a POV recording', async ({ page }, testInfo) => {
@@ -95,5 +157,10 @@ test.describe('real demoparser2 integration', () => {
     await expect(cancel).toBeVisible();
     await cancel.click();
     await expect(page.getByRole('heading', { name: 'Drop your .dem file here' })).toBeVisible();
+
+    await page.getByLabel('Choose a CS2 GOTV demo').setInputFiles(demoPath);
+    await expect(page.getByRole('img', { name: 'Mirage replay radar' })).toBeVisible({
+      timeout: 90_000,
+    });
   });
 });

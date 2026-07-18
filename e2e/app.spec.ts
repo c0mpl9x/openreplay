@@ -48,6 +48,32 @@ test('opens the local sample and exercises replay controls', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'Drop your .dem file here' })).toBeVisible();
 });
 
+test('clears the replay when the page is reloaded', async ({ page }) => {
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Preview sample replay' }).click();
+  await expect(page.getByText('synthetic-de-mirage.dem')).toBeVisible();
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const browserGlobal = globalThis as unknown as {
+          readonly localStorage: { readonly length: number };
+          readonly sessionStorage: { readonly length: number };
+        };
+        return {
+          localStorage: browserGlobal.localStorage.length,
+          sessionStorage: browserGlobal.sessionStorage.length,
+        };
+      }),
+    )
+    .toEqual({ localStorage: 0, sessionStorage: 0 });
+
+  await page.reload();
+
+  await expect(page.getByRole('heading', { name: 'Drop your .dem file here' })).toBeVisible();
+  await expect(page.getByText('synthetic-de-mirage.dem')).not.toBeVisible();
+});
+
 test('rejects an invalid local file without uploading it', async ({ page }) => {
   const nonLocalRequests: string[] = [];
   const writes: string[] = [];
@@ -68,6 +94,10 @@ test('rejects an invalid local file without uploading it', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('INVALID_DEMO');
   expect(nonLocalRequests).toEqual([]);
   expect(writes).toEqual([]);
+
+  await page.getByRole('button', { name: 'Open another demo' }).click();
+  await page.getByRole('button', { name: 'Preview sample replay' }).click();
+  await expect(page.getByRole('img', { name: 'Mirage replay radar' })).toBeVisible();
 });
 
 test('rejects a Source 1 demo before starting the parser worker', async ({ page }) => {

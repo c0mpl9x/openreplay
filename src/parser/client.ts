@@ -37,6 +37,18 @@ interface ActiveOperation {
   settled: boolean;
 }
 
+function terminateWorker(operation: ActiveOperation): void {
+  const worker = operation.worker;
+  if (worker === undefined) return;
+
+  // Break the worker -> operation callback chain before termination so an
+  // already queued message cannot retain the old operation.
+  worker.onmessage = null;
+  worker.onerror = null;
+  worker.terminate();
+  operation.worker = undefined;
+}
+
 function createAbortError(): DOMException {
   return new DOMException('Demo parsing was cancelled.', 'AbortError');
 }
@@ -160,7 +172,8 @@ export class DemoParserClient {
             return false;
           }
           operation.settled = true;
-          worker.terminate();
+          terminateWorker(operation);
+          operation.reject = undefined;
           if (this.active === operation) {
             this.active = undefined;
           }
@@ -222,7 +235,8 @@ export class DemoParserClient {
     } finally {
       if (this.active === operation) {
         operation.settled = true;
-        operation.worker?.terminate();
+        terminateWorker(operation);
+        operation.reject = undefined;
         this.active = undefined;
       }
     }
@@ -236,8 +250,9 @@ export class DemoParserClient {
 
     operation.settled = true;
     operation.abortController.abort();
-    operation.worker?.terminate();
+    terminateWorker(operation);
     operation.reject?.(createAbortError());
+    operation.reject = undefined;
     this.active = undefined;
   }
 

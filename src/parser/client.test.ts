@@ -184,6 +184,52 @@ describe('DemoParserClient', () => {
     client.dispose();
   });
 
+  it('cancels the previous parse and ignores its late result', async () => {
+    const firstWorker = new FakeWorker();
+    const secondWorker = new FakeWorker();
+    const factory = vi.fn(() => (factory.mock.calls.length === 1 ? firstWorker : secondWorker));
+    const client = new DemoParserClient(factory);
+
+    const firstPromise = client.parse(demoFile('first.dem'));
+    const firstFailure = expect(firstPromise).rejects.toMatchObject({ name: 'AbortError' });
+    await waitForRequest(firstWorker);
+    const secondPromise = client.parse(demoFile('second.dem'));
+    await waitForRequest(secondWorker);
+
+    await firstFailure;
+    expect(firstWorker.terminated).toBe(true);
+    expect(firstWorker.onmessage).toBeNull();
+    expect(firstWorker.onerror).toBeNull();
+
+    firstWorker.emit({ type: 'result', replay: replayFixture() });
+    secondWorker.emit({ type: 'result', replay: replayFixture() });
+
+    await expect(secondPromise).resolves.toEqual(replayFixture());
+    expect(secondWorker.terminated).toBe(true);
+    expect(secondWorker.onmessage).toBeNull();
+    expect(secondWorker.onerror).toBeNull();
+  });
+
+  it('can recover on the same client after a worker failure', async () => {
+    const failedWorker = new FakeWorker();
+    const recoveredWorker = new FakeWorker();
+    const factory = vi.fn(() => (factory.mock.calls.length === 1 ? failedWorker : recoveredWorker));
+    const client = new DemoParserClient(factory);
+
+    const failedPromise = client.parse(demoFile('failed.dem'));
+    await waitForRequest(failedWorker);
+    failedWorker.crash('worker crashed');
+    await expect(failedPromise).rejects.toMatchObject({ code: 'PARSER_FAILED' });
+    expect(failedWorker.terminated).toBe(true);
+
+    const recoveredPromise = client.parse(demoFile('recovered.dem'));
+    await waitForRequest(recoveredWorker);
+    recoveredWorker.emit({ type: 'result', replay: replayFixture() });
+
+    await expect(recoveredPromise).resolves.toEqual(replayFixture());
+    expect(recoveredWorker.terminated).toBe(true);
+  });
+
   it('aborts a native FileReader while the full local file is still loading', async () => {
     let activeReader: PendingFileReader | undefined;
     class PendingFileReader {
