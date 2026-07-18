@@ -1,3 +1,4 @@
+import { isSupportedMap, SUPPORTED_MAP_NAMES, type SupportedMapName } from '../maps';
 import { pairRoundEvents, type RawRoundEvent } from '../replay/rounds';
 import {
   createEmptyReplayFrames,
@@ -19,6 +20,7 @@ export type RawParserRow = Readonly<Record<string, unknown>>;
 
 export interface NormalizationInput {
   readonly fileName: string;
+  readonly mapName: SupportedMapName;
   readonly header: RawParserRow;
   readonly eventRows: readonly RawParserRow[];
   readonly tickRows: readonly RawParserRow[];
@@ -181,7 +183,7 @@ function eventRoundNumber(row: RawParserRow): number | undefined {
 }
 
 /** Validate metadata that is only available after the wasm header parse. */
-export function assertSupportedHeader(header: RawParserRow): void {
+export function assertSupportedHeader(header: RawParserRow): SupportedMapName {
   const stamp = stringField(header, 'demo_file_stamp');
   if (stamp === undefined || !stamp.startsWith('PBDEMS2')) {
     throw new ReplayError('INVALID_DEMO', 'The parser could not verify the CS2 demo header.');
@@ -199,14 +201,17 @@ export function assertSupportedHeader(header: RawParserRow): void {
   }
 
   const mapName = stringField(header, 'map_name')?.toLocaleLowerCase('en-US');
-  if (mapName !== 'de_mirage') {
+  if (!isSupportedMap(mapName)) {
+    const supportedMaps = SUPPORTED_MAP_NAMES.join(', ');
     throw new ReplayError(
       'UNSUPPORTED_MAP',
       mapName === undefined
-        ? 'The demo does not declare a map. OpenReplay v0.1 supports de_mirage only.'
-        : `The map ${mapName} is not supported yet. OpenReplay v0.1 supports de_mirage only.`,
+        ? `The demo does not declare a supported map. OpenReplay supports ${supportedMaps}.`
+        : `The map ${mapName} is not supported yet. OpenReplay supports ${supportedMaps}.`,
     );
   }
+
+  return mapName;
 }
 
 export function roundEventsFromRows(rows: readonly RawParserRow[]): RawRoundEvent[] {
@@ -580,7 +585,7 @@ export function normalizeReplay(input: NormalizationInput): ReplayV1 {
     schemaVersion: 1,
     meta: {
       fileName: input.fileName,
-      mapName: 'de_mirage',
+      mapName: input.mapName,
       ...(serverName === undefined ? {} : { serverName }),
       tickRate: tickRate !== undefined && tickRate > 0 ? tickRate : 64,
       durationTicks: lastRound?.endTick ?? input.sampleTicks[input.sampleTicks.length - 1] ?? 0,

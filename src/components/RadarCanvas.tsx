@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { copy } from '../i18n/en';
-import { MIRAGE_MAP_CONFIG, worldToMap } from '../maps';
+import { getMapConfig, worldToMap } from '../maps';
+import type { MapConfigV1, MapLevelV1 } from '../maps';
 import type { PlaybackClock } from '../playback/PlaybackClock';
 import { findActiveBombEvent } from '../replay/bomb';
-import { interpolatePlayerFrame } from '../replay/interpolation';
+import { interpolatePlayerFrame, type PlayerFrameState } from '../replay/interpolation';
 import { TEAMS, type ReplayV1 } from '../replay/types';
 
 interface RadarCanvasProps {
@@ -75,14 +76,54 @@ function drawPlayer(
   context.restore();
 }
 
+function levelLabel(level: MapLevelV1): string {
+  return level.id === 'main' ? copy.mainLevel : `${level.id.toUpperCase()} LEVEL`;
+}
+
+function selectVisibleLevel(
+  mapConfig: MapConfigV1,
+  states: readonly (PlayerFrameState | undefined)[],
+  previousLevelId: string | undefined,
+): MapLevelV1 {
+  const counts = new Map<string, number>();
+  for (const state of states) {
+    if (!state?.alive) continue;
+    const level = worldToMap(mapConfig, state).level;
+    counts.set(level.id, (counts.get(level.id) ?? 0) + 1);
+  }
+
+  const firstLevel = mapConfig.levels[0];
+  if (firstLevel === undefined) {
+    throw new RangeError('Map configuration must contain at least one level.');
+  }
+
+  let selected = firstLevel;
+  let selectedCount = counts.get(selected.id) ?? 0;
+  for (const level of mapConfig.levels.slice(1)) {
+    const count = counts.get(level.id) ?? 0;
+    if (count > selectedCount || (count === selectedCount && level.id === previousLevelId)) {
+      selected = level;
+      selectedCount = count;
+    }
+  }
+  return selected;
+}
+
+function initialLevelLabel(mapConfig: MapConfigV1 | undefined): string {
+  const level = mapConfig?.levels[0];
+  return level === undefined ? copy.mainLevel : levelLabel(level);
+}
+
 export function RadarCanvas({ replay, clock, roundNumber }: RadarCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const levelLabelRef = useRef<HTMLElement>(null);
+  const mapConfig = getMapConfig(replay.meta.mapName);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
-    if (!canvas || !container) return undefined;
+    if (!canvas || !container || mapConfig === undefined) return undefined;
 
     const context = canvas.getContext('2d');
     if (!context) return undefined;
@@ -90,9 +131,14 @@ export function RadarCanvas({ replay, clock, roundNumber }: RadarCanvasProps) {
     let frame = 0;
     let cssSize = 1;
     let disposed = false;
-    const image = new Image();
-    image.decoding = 'async';
-    image.src = MIRAGE_MAP_CONFIG.image;
+    let activeLevelId = mapConfig.levels[0]?.id;
+    const images = new Map<string, HTMLImageElement>();
+    for (const level of mapConfig.levels) {
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = level.image;
+      images.set(level.id, image);
+    }
 
     const resize = () => {
       const rect = container.getBoundingClientRect();
@@ -112,12 +158,19 @@ export function RadarCanvas({ replay, clock, roundNumber }: RadarCanvasProps) {
     const draw = () => {
       if (disposed) return;
       const tick = clock.getTick();
-      const mapScale = cssSize / MIRAGE_MAP_CONFIG.resolution.width;
+      const playerStates = replay.players.map((_, playerIndex) =>
+        interpolatePlayerFrame(replay.frames, playerIndex, tick),
+      );
+      const activeLevel = selectVisibleLevel(mapConfig, playerStates, activeLevelId);
+      activeLevelId = activeLevel.id;
+      if (levelLabelRef.current) levelLabelRef.current.textContent = levelLabel(activeLevel);
+      const mapScale = cssSize / mapConfig.resolution.width;
 
       context.clearRect(0, 0, cssSize, cssSize);
       context.fillStyle = '#0a0e13';
       context.fillRect(0, 0, cssSize, cssSize);
-      if (image.complete && image.naturalWidth > 0) {
+      const image = images.get(activeLevel.id);
+      if (image?.complete && image.naturalWidth > 0) {
         context.globalAlpha = 0.9;
         context.drawImage(image, 0, 0, cssSize, cssSize);
         context.globalAlpha = 1;
@@ -144,27 +197,29 @@ export function RadarCanvas({ replay, clock, roundNumber }: RadarCanvasProps) {
             ? interpolatePlayerFrame(replay.frames, playerIndex, bomb.tick, { maxGapTicks: 16 })
             : undefined;
         if (state) {
-          const point = worldToMap(MIRAGE_MAP_CONFIG, state);
-          const x = point.x * mapScale;
-          const y = point.y * mapScale;
-          const pulse = 11 + Math.sin(performance.now() / 160) * 3;
-          context.beginPath();
-          context.arc(x, y, pulse * mapScale, 0, Math.PI * 2);
-          context.fillStyle = 'rgba(255, 87, 93, 0.35)';
-          context.fill();
-          context.fillStyle = '#ff5d65';
-          context.font = `800 ${Math.max(10, 12 * mapScale)}px ui-sans-serif, system-ui`;
-          context.textAlign = 'center';
-          context.textBaseline = 'middle';
-          context.fillText('B', x, y);
+          const point = worldToMap(mapConfig, state);
+          if (point.level.id === activeLevel.id) {
+            const x = point.x * mapScale;
+            const y = point.y * mapScale;
+            const pulse = 11 + Math.sin(performance.now() / 160) * 3;
+            context.beginPath();
+            context.arc(x, y, pulse * mapScale, 0, Math.PI * 2);
+            context.fillStyle = 'rgba(255, 87, 93, 0.35)';
+            context.fill();
+            context.fillStyle = '#ff5d65';
+            context.font = `800 ${Math.max(10, 12 * mapScale)}px ui-sans-serif, system-ui`;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText('B', x, y);
+          }
         }
       }
 
       replay.players.forEach((player, playerIndex) => {
-        const state = interpolatePlayerFrame(replay.frames, playerIndex, tick);
+        const state = playerStates[playerIndex];
         if (!state?.alive) return;
-        const point = worldToMap(MIRAGE_MAP_CONFIG, state);
-        if (!point.inside) return;
+        const point = worldToMap(mapConfig, state);
+        if (point.level.id !== activeLevel.id || !point.inside) return;
         drawPlayer(
           context,
           player.name,
@@ -189,15 +244,15 @@ export function RadarCanvas({ replay, clock, roundNumber }: RadarCanvasProps) {
             ? interpolatePlayerFrame(replay.frames, playerIndex, death.tick, { maxGapTicks: 16 })
             : undefined;
         if (!state) continue;
-        const point = worldToMap(MIRAGE_MAP_CONFIG, state);
-        if (!point.inside) continue;
+        const point = worldToMap(mapConfig, state);
+        if (point.level.id !== activeLevel.id || !point.inside) continue;
         const x = point.x * mapScale;
         const y = point.y * mapScale;
         context.fillStyle = '#ff5d6c';
         context.font = `700 ${Math.max(13, 20 * mapScale)}px "Segoe UI Symbol", sans-serif`;
         context.textAlign = 'center';
         context.textBaseline = 'middle';
-        context.fillText('☠', x, y);
+        context.fillText('\u2620', x, y);
       }
 
       frame = requestAnimationFrame(draw);
@@ -208,16 +263,20 @@ export function RadarCanvas({ replay, clock, roundNumber }: RadarCanvasProps) {
       disposed = true;
       cancelAnimationFrame(frame);
       observer.disconnect();
-      image.src = '';
+      for (const image of images.values()) image.src = '';
     };
-  }, [clock, replay, roundNumber]);
+  }, [clock, mapConfig, replay, roundNumber]);
 
   return (
     <div className="radar" ref={containerRef}>
-      <canvas aria-label={copy.radarAria} ref={canvasRef} role="img" />
+      <canvas
+        aria-label={`${mapConfig?.displayName ?? copy.map} replay radar`}
+        ref={canvasRef}
+        role="img"
+      />
       <div className="radar__label">
-        <span>{copy.mapIdentifier}</span>
-        <small>{copy.mainLevel}</small>
+        <span>{mapConfig?.id.toUpperCase() ?? copy.mapIdentifier}</span>
+        <small ref={levelLabelRef}>{initialLevelLabel(mapConfig)}</small>
       </div>
       <div className="radar__legend" aria-hidden="true">
         <span>

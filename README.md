@@ -9,9 +9,13 @@ demos. A demo is opened from your device, parsed in a Web Worker with
 WebAssembly, and rendered on a Canvas radar. There is no application server,
 account, upload, or demo storage.
 
-> **Project status:** v0.1 is intentionally narrow: uncompressed CS2 GOTV
-> `.dem` files, `de_mirage`, desktop Chrome/Edge/Firefox, and files up to
-> 500 MiB.
+> **Project status:** v0.2 supports uncompressed CS2 GOTV `.dem` files from
+> the current Active Duty pool (`de_ancient`, `de_anubis`, `de_cache`,
+> `de_dust2`, `de_inferno`, `de_mirage`, and `de_nuke`) on desktop browsers,
+> with files up to 500 MiB.
+
+The pool follows [Valve's July 8, 2026 update](https://www.counter-strike.net/newsentry/523080783919841380),
+which added Cache and removed Overpass from Active Duty.
 
 ## Privacy by design
 
@@ -20,24 +24,26 @@ The selected demo never leaves the browser. The application transfers its
 replay in memory for the current tab only. Opening another demo or reloading the
 page releases the previous replay.
 
-GitHub Pages serves only the static HTML, CSS, JavaScript, map asset, and WASM
+GitHub Pages serves only the static HTML, CSS, JavaScript, map assets, and WASM
 needed to run the viewer. It is not used to receive demos. Do not add analytics,
 remote error reporting, or any request containing demo bytes or extracted match
 data without an explicit privacy review and a visible user-facing opt-in.
 
-## v0.1 capabilities
+## Current capabilities
 
 - Local drag-and-drop/file selection with Source 2 and GOTV validation.
-- Mirage radar with CT/T markers, facing direction, health, armor, and deaths.
+- Active Duty radar with CT/T markers, facing direction, health, armor, and
+  deaths; Nuke switches between upper and lower levels.
 - Round navigation, seek, play/pause, and 0.5x/1x/2x/4x playback.
 - Synchronized kills, timeline event markers, and bomb state.
 - Typed-array replay data and Canvas rendering outside React's per-frame render
   cycle.
 - Explicit, user-readable errors for invalid, unsupported, or oversized demos.
 
-POV demos, Source 1 demos, compressed archives, other maps, mobile/Safari,
-accounts, persistence, shareable links, HLTV ingestion, grenades, inventories,
-statistics, and heatmaps are out of scope for v0.1.
+POV demos, Source 1 demos, compressed archives, community maps outside the
+Active Duty pool, mobile/Safari, accounts, persistence, shareable links, HLTV
+ingestion, grenades, inventories, statistics, and heatmaps remain out of scope
+for v0.2.
 
 ## Requirements
 
@@ -156,7 +162,8 @@ All `*.dem` files and `fixtures/private/` are ignored by Git. Put private
 acceptance demos under `fixtures/private/`; never add them to commits, releases,
 Actions artifacts, bug reports, or Pages.
 
-Before tagging v0.1.0, manually validate a representative Mirage GOTV demo:
+Before tagging v0.2.0, manually validate a representative GOTV demo for each
+supported map, including both Nuke levels when the demo visits them:
 
 - ten players align with the radar and side changes are correct;
 - rounds, kills, and bomb events match the source match;
@@ -178,6 +185,19 @@ Playwright check is skipped in CI and never publishes the file:
 $env:OPENREPLAY_PRIVATE_DEMO = 'fixtures/private/your-demo.dem'
 npm run test:e2e -- --project=chromium --grep 'private acceptance'
 ```
+
+To run the optional real-demo acceptance matrix for the whole Active Duty pool,
+place ignored files named `de_ancient.dem`, `de_anubis.dem`, `de_cache.dem`,
+`de_dust2.dem`, `de_inferno.dem`, `de_mirage.dem`, and `de_nuke.dem` in a local
+directory, then run:
+
+```powershell
+$env:OPENREPLAY_MAP_FIXTURES = 'fixtures/private/maps'
+npm run test:e2e -- --project=chromium --grep 'Active Duty fixture'
+```
+
+The matrix skips missing files, never runs in CI by default, and never uploads
+or commits the demos.
 
 The current pinned artifact was also exercised end to end against that
 60,601,900-byte fixture: 10 players, 10 rounds, 71 match events, 5,157 sampled
@@ -218,8 +238,9 @@ vulnerabilities privately as described in [`SECURITY.md`](SECURITY.md), and do
 not attach a private demo to a public issue.
 
 The release roadmap is tracked in [`ROADMAP.md`](ROADMAP.md). The current
-priority after v0.1 is browser compatibility, parser robustness, and local
-performance; online ingestion and persistence remain future work.
+priority after the map-pool expansion is local performance measurement and
+responsive desktop layouts; online ingestion and persistence remain future
+work.
 
 ## Legal
 

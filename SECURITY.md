@@ -40,7 +40,7 @@ times are best effort because this is a volunteer project.
 The expected design is a static, local-only application:
 
 - demo bytes and parsed match data must not be transmitted;
-- no backend, account, remote storage, or analytics is part of v0.1;
+- no backend, account, remote storage, or analytics is part of v0.2;
 - parser work runs in a disposable Worker and cancellation terminates it;
 - file type, Source 2/GOTV shape, supported map, and 500 MiB limit are validated;
 - generated DOM text must be treated as untrusted, including player names;

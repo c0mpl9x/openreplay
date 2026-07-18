@@ -1,8 +1,9 @@
 # Contributing
 
-Thank you for helping build **OpenReplay — CS2 2D Demo Viewer**. v0.1 is a
-privacy-first, static viewer for local Mirage GOTV demos; keep changes within
-that product boundary unless an issue explicitly expands it.
+Thank you for helping build **OpenReplay — CS2 2D Demo Viewer**. v0.2 is a
+privacy-first, static viewer for local GOTV demos from the current Active Duty
+map pool; keep changes within that product boundary unless an issue explicitly
+expands it.
 
 ## Set up
 
