@@ -20,8 +20,9 @@ GitHub artifacts.
   recovery.
 - Measure parse time and memory locally without telemetry.
 - Validate responsive layouts and supported desktop browsers.
-- Add another map only after a compatible public fixture and licensed map data
-  are available.
+- Support the current Active Duty pool with compatible fixtures and recorded
+  map-data provenance: Ancient, Anubis, Cache, Dust II, Inferno, Mirage, and
+  Nuke (including Nuke's upper and lower levels).
 
 ## Future — Optional online layer
 

@@ -2,7 +2,7 @@ export const copy = {
   appName: 'OpenReplay',
   appDescriptor: 'CS2 2D Demo Viewer',
   localOnly: 'Local only',
-  version: 'v0.1',
+  version: 'v0.2',
   eyebrow: 'LOCAL-FIRST MATCH REVIEW',
   heroTitle: 'See the round, not just the result.',
   heroBody:
@@ -14,7 +14,7 @@ export const copy = {
   sample: 'Preview sample replay',
   privacy: 'Processed locally — your demo never leaves this device',
   privacyDetail: 'No account, upload, analytics, or server processing.',
-  supported: 'Mirage · GOTV · up to 500 MiB',
+  supported: 'Active Duty maps · GOTV · up to 500 MiB',
   parsing: {
     validating: 'Checking the demo',
     metadata: 'Reading match metadata',
@@ -69,7 +69,7 @@ export const copy = {
     FILE_TOO_LARGE: 'This demo is too large',
     INVALID_DEMO: 'This is not a valid CS2 demo',
     UNSUPPORTED_DEMO_TYPE: 'This demo type is not supported yet',
-    UNSUPPORTED_MAP: 'Only Mirage is supported in v0.1',
+    UNSUPPORTED_MAP: 'Only the current Active Duty map pool is supported',
     PARSER_FAILED: 'The parser could not read this demo',
     OUT_OF_MEMORY: 'The browser ran out of memory',
   },

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { copy } from '../i18n/en';
+import { getMapConfig } from '../maps';
 import { PlaybackClock } from '../playback/PlaybackClock';
 import { usePlaybackClock } from '../playback/usePlaybackClock';
 import { TEAMS, type ReplayV1 } from '../replay/types';
@@ -16,6 +17,7 @@ interface ReplayViewProps {
 
 export function ReplayView({ replay, onReset }: ReplayViewProps) {
   const [roundIndex, setRoundIndex] = useState(0);
+  const mapConfig = getMapConfig(replay.meta.mapName);
   const firstRound = replay.rounds[0];
   const clock = useMemo(
     () =>
@@ -132,7 +134,7 @@ export function ReplayView({ replay, onReset }: ReplayViewProps) {
               <dl>
                 <div>
                   <dt>{copy.map}</dt>
-                  <dd>{copy.mirage}</dd>
+                  <dd>{mapConfig?.displayName ?? replay.meta.mapName}</dd>
                 </div>
                 <div>
                   <dt>{copy.tickRate}</dt>

@@ -1,4 +1,4 @@
-import { copyFileSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 
 import { expect, test } from '@playwright/test';
@@ -7,7 +7,19 @@ const demoPath = resolve('vendor/demoparser/src/parser/test_demo.dem');
 const privateDemoPath = process.env.OPENREPLAY_PRIVATE_DEMO
   ? resolve(process.env.OPENREPLAY_PRIVATE_DEMO)
   : undefined;
+const mapFixtureDirectory = process.env.OPENREPLAY_MAP_FIXTURES
+  ? resolve(process.env.OPENREPLAY_MAP_FIXTURES)
+  : undefined;
 const MAX_LOCAL_DEMO_BYTES = 500 * 1024 * 1024;
+const ACTIVE_DUTY_FIXTURES = [
+  { mapName: 'de_ancient', displayName: 'Ancient' },
+  { mapName: 'de_anubis', displayName: 'Anubis' },
+  { mapName: 'de_cache', displayName: 'Cache' },
+  { mapName: 'de_dust2', displayName: 'Dust II' },
+  { mapName: 'de_inferno', displayName: 'Inferno' },
+  { mapName: 'de_mirage', displayName: 'Mirage' },
+  { mapName: 'de_nuke', displayName: 'Nuke' },
+] as const;
 
 function mutatedPublicDemo(search: string, replacement: string, outputPath: string): string {
   const demo = readFileSync(demoPath);
@@ -104,18 +116,42 @@ test.describe('real demoparser2 integration', () => {
     await expect(page.getByRole('heading', { name: 'Drop your .dem file here' })).toBeVisible();
   });
 
-  test('rejects a non-Mirage Source 2 header with a public error', async ({ page }, testInfo) => {
+  for (const { mapName, displayName } of ACTIVE_DUTY_FIXTURES) {
+    test(`parses an optional ${displayName} Active Duty fixture`, async ({ page }) => {
+      const fixturePath =
+        mapFixtureDirectory === undefined
+          ? undefined
+          : resolve(mapFixtureDirectory, `${mapName}.dem`);
+      if (fixturePath === undefined || !existsSync(fixturePath)) {
+        test.skip(true, 'Set OPENREPLAY_MAP_FIXTURES to a directory containing map demos.');
+        return;
+      }
+
+      const { size } = statSync(fixturePath);
+      expect(size).toBeGreaterThan(0);
+      expect(size).toBeLessThanOrEqual(MAX_LOCAL_DEMO_BYTES);
+
+      await page.goto('./');
+      await page.getByLabel('Choose a CS2 GOTV demo').setInputFiles(fixturePath);
+      await expect(page.getByRole('img', { name: `${displayName} replay radar` })).toBeVisible({
+        timeout: 90_000,
+      });
+      await expect(page.getByText(`${displayName}`, { exact: true })).toBeVisible();
+    });
+  }
+
+  test('rejects a Source 2 map outside the Active Duty pool', async ({ page }, testInfo) => {
     const mutatedDemoPath = mutatedPublicDemo(
       'de_mirage',
-      'de_dust2\0',
-      testInfo.outputPath('dust2.dem'),
+      'de_train\0',
+      testInfo.outputPath('train.dem'),
     );
 
     await page.goto('./');
     await page.getByLabel('Choose a CS2 GOTV demo').setInputFiles(mutatedDemoPath);
 
     await expect(page.getByRole('alert')).toContainText('UNSUPPORTED_MAP', { timeout: 90_000 });
-    await expect(page.getByRole('alert')).toContainText('de_dust2');
+    await expect(page.getByRole('alert')).toContainText('de_train');
   });
 
   test('rejects a truncated public demo as an invalid file', async ({ page }, testInfo) => {

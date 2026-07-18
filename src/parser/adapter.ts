@@ -86,7 +86,7 @@ export function parseReplayWithBindings(
 
   report('metadata');
   const header = parserRecord(bindings.parseHeader(bytes), 'header');
-  assertSupportedHeader(header);
+  const mapName = assertSupportedHeader(header);
 
   report('events');
   const eventRows = parserRows(
@@ -125,6 +125,7 @@ export function parseReplayWithBindings(
   report('normalizing');
   return normalizeReplay({
     fileName: request.fileName,
+    mapName,
     header,
     eventRows,
     tickRows,

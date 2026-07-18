@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ReplayFrameFlags } from '../replay/types';
+import { SUPPORTED_MAP_NAMES } from '../maps';
 import type { ParseRequest, ParserStage } from './protocol';
 import {
   PARSED_EVENT_NAMES,
@@ -78,13 +79,13 @@ const eventRows: RawParserRow[] = [
   },
 ];
 
-function fixtureBindings(): DemoparserBindings {
+function fixtureBindings(mapName = 'de_mirage'): DemoparserBindings {
   return {
     parseHeader: () =>
       new Map<string, unknown>([
         ['demo_file_stamp', 'PBDEMS2\0'],
         ['client_name', 'SourceTV Demo'],
-        ['map_name', 'de_mirage'],
+        ['map_name', mapName],
         ['server_name', 'Fixture server'],
         ['playback_ticks_per_second', '64'],
       ]),
@@ -186,6 +187,15 @@ describe('demoparser adapter', () => {
     ]);
   });
 
+  it.each(SUPPORTED_MAP_NAMES)('preserves the supported map name for %s', (mapName) => {
+    const replay = parseReplayWithBindings(
+      demoRequest(),
+      fixtureBindings(mapName),
+      () => undefined,
+    );
+    expect(replay.meta.mapName).toBe(mapName);
+  });
+
   it('keeps distinct Steam IDs when players share the same display name', () => {
     const bindings = fixtureBindings();
     const parseTicks = bindings.parseTicks.bind(bindings);
@@ -241,9 +251,9 @@ describe('demoparser adapter', () => {
       assertSupportedHeader({
         demo_file_stamp: 'PBDEMS2\0',
         client_name: 'SourceTV Demo',
-        map_name: 'de_dust2',
+        map_name: 'de_train',
       }),
-    ).toThrow(/de_dust2/iu);
+    ).toThrow(/de_train/iu);
     expect(() => assertSupportedHeader({ client_name: 'SourceTV Demo' })).toThrow(
       /verify the CS2 demo header/iu,
     );
