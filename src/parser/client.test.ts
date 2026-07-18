@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ReplayV1 } from '../replay/types';
+import { MAX_DEMO_BYTES } from '../replay/validation';
 import { DemoParserClient, type DemoFile, type ParserWorker } from './client';
 import type { ParseRequest } from './protocol';
 
@@ -117,6 +118,24 @@ describe('DemoParserClient', () => {
       slice: () => new Blob([Uint8Array.of(1, 2, 3, 4, 5, 6, 7, 8)]),
     };
     await expect(client.parse(badSignature)).rejects.toMatchObject({ code: 'INVALID_DEMO' });
+    expect(factory).not.toHaveBeenCalled();
+  });
+
+  it('rejects an oversized demo before reading its body', async () => {
+    let read = false;
+    const oversized: DemoFile = {
+      ...demoFile(),
+      size: MAX_DEMO_BYTES + 1,
+      arrayBuffer: () => {
+        read = true;
+        return Promise.resolve(arrayBuffer([0x50, 0x42, 0x44, 0x45, 0x4d, 0x53, 0x32, 0x00]));
+      },
+    };
+    const factory = vi.fn(() => new FakeWorker());
+    const client = new DemoParserClient(factory);
+
+    await expect(client.parse(oversized)).rejects.toMatchObject({ code: 'FILE_TOO_LARGE' });
+    expect(read).toBe(false);
     expect(factory).not.toHaveBeenCalled();
   });
 

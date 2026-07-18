@@ -69,3 +69,15 @@ test('rejects an invalid local file without uploading it', async ({ page }) => {
   expect(nonLocalRequests).toEqual([]);
   expect(writes).toEqual([]);
 });
+
+test('rejects a Source 1 demo before starting the parser worker', async ({ page }) => {
+  await page.goto('./');
+  await page.getByLabel('Choose a CS2 GOTV demo').setInputFiles({
+    name: 'legacy-source1.dem',
+    mimeType: 'application/octet-stream',
+    buffer: Buffer.from('HL2DEMO\0'),
+  });
+
+  await expect(page.getByRole('alert')).toContainText('UNSUPPORTED_DEMO_TYPE');
+  await expect(page.getByRole('alert')).toContainText('Source 1');
+});

@@ -15,8 +15,11 @@ function ascii(value: string): Uint8Array {
 }
 
 describe('demo validation', () => {
-  it('accepts case-insensitive .dem metadata at both size boundaries', () => {
+  it('accepts case-insensitive .dem metadata at and near the size limit', () => {
     expect(() => validateDemoMetadata({ name: 'match.DEM', size: 1 })).not.toThrow();
+    expect(() =>
+      validateDemoMetadata({ name: 'match.dem', size: MAX_DEMO_BYTES - 1 }),
+    ).not.toThrow();
     expect(() => validateDemoMetadata({ name: 'match.dem', size: MAX_DEMO_BYTES })).not.toThrow();
   });
 
