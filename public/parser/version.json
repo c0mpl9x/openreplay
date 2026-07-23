@@ -14,8 +14,8 @@
     },
     {
       "path": "public/parser/demoparser2_bg.wasm",
-      "bytes": 3049541,
-      "sha256": "786d53da0b46cbf4cbea2f5eed721b2a50e2419181c25c336002c447a35bbcfb"
+      "bytes": 3049657,
+      "sha256": "765783b8f77ecf495f515ace4c2a316652c6c5db2381a2ac3ebeb34b2a98e8e0"
     }
   ]
 }
