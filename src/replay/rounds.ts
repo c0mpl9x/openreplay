@@ -43,15 +43,36 @@ function assertRawRoundEvent(event: RawRoundEvent): void {
 }
 
 function eventBelongsToRound(event: RawRoundEvent, round: OpenRound): boolean {
-  return (
-    event.roundNumber === undefined ||
-    round.explicitNumber === undefined ||
-    event.roundNumber === round.explicitNumber ||
-    // Some demoparser2 GOTV recordings increment `total_rounds_played`
-    // before emitting round_end. In that shape the end is reported as the
-    // next round even though it closes the currently open one.
-    (event.type === 'round_end' && event.roundNumber === round.explicitNumber + 1)
-  );
+  if (event.roundNumber === undefined || round.explicitNumber === undefined) {
+    return true;
+  }
+  if (event.roundNumber === round.explicitNumber) {
+    return true;
+  }
+
+  if (event.type !== 'round_end') {
+    return false;
+  }
+
+  // Some demoparser2 GOTV recordings report round_end one round ahead. A
+  // second recording shape reports it two rounds ahead while round_start
+  // continues to identify the round that is actually open. Both are still
+  // safe to pair by event order because a later round_start replaces the
+  // current open round before its end can be accepted.
+  const roundNumberDelta = event.roundNumber - round.explicitNumber;
+  return roundNumberDelta === 1 || roundNumberDelta === 2;
+}
+
+function completedRoundNumber(event: RawRoundEvent, round: OpenRound): number {
+  if (
+    event.type === 'round_end' &&
+    event.roundNumber !== undefined &&
+    round.explicitNumber !== undefined &&
+    event.roundNumber === round.explicitNumber + 1
+  ) {
+    return event.roundNumber;
+  }
+  return round.number;
 }
 
 /**
@@ -107,13 +128,7 @@ export function pairRoundEvents(events: readonly RawRoundEvent[]): ReplayRound[]
     const freezeEndTick = openRound.freezeEndTick ?? openRound.startTick;
     if (!openRound.warmup && event.tick > openRound.startTick && freezeEndTick <= event.tick) {
       const round: ReplayRound = {
-        number:
-          event.type === 'round_end' &&
-          event.roundNumber !== undefined &&
-          openRound.explicitNumber !== undefined &&
-          event.roundNumber === openRound.explicitNumber + 1
-            ? event.roundNumber
-            : openRound.number,
+        number: completedRoundNumber(event, openRound),
         startTick: openRound.startTick,
         freezeEndTick,
         endTick: event.tick,

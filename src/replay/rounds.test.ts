@@ -82,6 +82,32 @@ describe('pairRoundEvents', () => {
     ]);
   });
 
+  it('pairs GOTV rounds when round_end is reported two rounds ahead', () => {
+    expect(
+      pairRoundEvents([
+        { type: 'round_start', tick: 100, roundNumber: 1 },
+        { type: 'round_freeze_end', tick: 200 },
+        { type: 'round_end', tick: 300, roundNumber: 3 },
+        { type: 'round_start', tick: 400, roundNumber: 2 },
+        { type: 'round_freeze_end', tick: 500 },
+        { type: 'round_end', tick: 600, roundNumber: 4 },
+      ]),
+    ).toEqual([
+      { number: 1, startTick: 100, freezeEndTick: 200, endTick: 300 },
+      { number: 2, startTick: 400, freezeEndTick: 500, endTick: 600 },
+    ]);
+  });
+
+  it('does not accept an unrelated round_end number', () => {
+    expect(
+      pairRoundEvents([
+        { type: 'round_start', tick: 100, roundNumber: 1 },
+        { type: 'round_freeze_end', tick: 200 },
+        { type: 'round_end', tick: 300, roundNumber: 4 },
+      ]),
+    ).toEqual([]);
+  });
+
   it('ignores lifecycle events explicitly belonging to another round', () => {
     expect(
       pairRoundEvents([

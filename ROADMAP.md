@@ -24,6 +24,14 @@ GitHub artifacts.
   map-data provenance: Ancient, Anubis, Cache, Dust II, Inferno, Mirage, and
   Nuke (including Nuke's upper and lower levels).
 
+### v0.2 compatibility fixes in progress
+
+- [ ] Nuke: keep players visible when a replay contains players on both the
+      upper and lower levels.
+- [x] GOTV round lifecycle compatibility: accept valid recordings whose
+      `round_end` metadata uses a different round-number offset than
+      `round_start`, as seen in some Dust II demos.
+
 ## Future — Optional online layer
 
 An online product is deliberately deferred. If it becomes worthwhile, keep the
