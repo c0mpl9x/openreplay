@@ -86,7 +86,7 @@ jobs:
 
       - name: Install Rust toolchain
         if: steps.parser-source.outputs.available == 'true'
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.85.5
         with:
           tool: rust@1.97.0 + wasm32-unknown-unknown
           fallback: none
