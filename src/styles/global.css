@@ -832,9 +832,30 @@ a {
   border-radius: inherit;
 }
 
+.radar-grid {
+  display: grid;
+  gap: 14px;
+  width: min(100%, calc(100vh - 240px));
+  max-width: 100%;
+  min-width: 0;
+  justify-self: center;
+}
+
+.radar-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.radar-grid--multi {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+.radar-grid .radar {
+  width: 100%;
+}
+
 .radar {
   position: relative;
-  width: min(100%, calc(100vh - 240px));
   min-width: 0;
   max-width: 100%;
   aspect-ratio: 1;
@@ -858,8 +879,10 @@ a {
 
 .radar canvas {
   display: block;
+  aspect-ratio: 1 / 1;
+  object-fit: fill;
   width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
 }
 
 .radar__label,
@@ -1209,6 +1232,12 @@ a {
     display: grid;
     grid-column: 1 / -1;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .radar-grid--multi {
+    grid-template-columns: 1fr;
   }
 }
 

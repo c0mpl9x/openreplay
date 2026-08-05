@@ -33,7 +33,7 @@ data without an explicit privacy review and a visible user-facing opt-in.
 
 - Local drag-and-drop/file selection with Source 2 and GOTV validation.
 - Active Duty radar with CT/T markers, facing direction, health, armor, and
-  deaths; Nuke switches between upper and lower levels.
+  deaths; Nuke renders upper and lower levels side by side.
 - Round navigation, seek, play/pause, and 0.5x/1x/2x/4x playback.
 - Synchronized kills, timeline event markers, and bomb state.
 - Typed-array replay data and Canvas rendering outside React's per-frame render

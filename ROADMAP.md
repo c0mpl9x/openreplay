@@ -26,8 +26,8 @@ GitHub artifacts.
 
 ### v0.2 compatibility fixes in progress
 
-- [ ] Nuke: keep players visible when a replay contains players on both the
-      upper and lower levels.
+- [x] Nuke: render upper and lower radars side by side so players remain visible
+      when a replay contains players on both levels.
 - [x] GOTV round lifecycle compatibility: accept valid recordings whose
       `round_end` metadata uses a different round-number offset than
       `round_start`, as seen in some Dust II demos.
