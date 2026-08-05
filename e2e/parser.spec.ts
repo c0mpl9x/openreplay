@@ -133,10 +133,31 @@ test.describe('real demoparser2 integration', () => {
 
       await page.goto('./');
       await page.getByLabel('Choose a CS2 GOTV demo').setInputFiles(fixturePath);
-      await expect(page.getByRole('img', { name: `${displayName} replay radar` })).toBeVisible({
-        timeout: 90_000,
-      });
+      if (mapName !== 'de_nuke') {
+        await expect(page.getByRole('img', { name: `${displayName} replay radar` })).toBeVisible({
+          timeout: 90_000,
+        });
+      }
       await expect(page.getByText(`${displayName}`, { exact: true })).toBeVisible();
+
+      if (mapName === 'de_nuke') {
+        const upper = page.getByRole('img', { name: 'Nuke upper level replay radar' });
+        const lower = page.getByRole('img', { name: 'Nuke lower level replay radar' });
+        await expect(upper).toBeVisible({ timeout: 90_000 });
+        await expect(lower).toBeVisible({ timeout: 90_000 });
+
+        const [upperBounds, lowerBounds] = await Promise.all([
+          upper.boundingBox(),
+          lower.boundingBox(),
+        ]);
+        expect(upperBounds).not.toBeNull();
+        expect(lowerBounds).not.toBeNull();
+        if (upperBounds === null || lowerBounds === null) return;
+        expect(upperBounds.x).toBeLessThan(lowerBounds.x);
+        expect(Math.abs(upperBounds.y - lowerBounds.y)).toBeLessThanOrEqual(1);
+        expect(Math.abs(upperBounds.width - upperBounds.height)).toBeLessThanOrEqual(1);
+        expect(Math.abs(lowerBounds.width - lowerBounds.height)).toBeLessThanOrEqual(1);
+      }
     });
   }
 
