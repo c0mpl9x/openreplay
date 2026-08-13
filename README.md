@@ -162,20 +162,25 @@ All `*.dem` files and `fixtures/private/` are ignored by Git. Put private
 acceptance demos under `fixtures/private/`; never add them to commits, releases,
 Actions artifacts, bug reports, or Pages.
 
-Before tagging v0.2.0, manually validate a representative GOTV demo for each
-supported map, including both Nuke levels when the demo visits them:
+The local v0.2 acceptance pass is complete for the current Active Duty pool,
+including both Nuke levels when the demos visit them. It also includes a
+dedicated stress run with a demo at the 500 MiB limit. No acceptance demos are
+stored in the repository.
 
-- ten players align with the radar and side changes are correct;
-- rounds, kills, and bomb events match the source match;
-- parsing completes within 90 seconds on the reference development machine,
-  without UI blocking, crashes, or out-of-memory errors;
-- playback is smooth and no network request contains demo or match data;
-- cancel, reload, and opening a second demo release the previous state.
+- [x] Active Duty map-pool acceptance, including Ancient, Anubis, Cache, Dust II,
+      Inferno, Mirage, and Nuke.
+- [x] 500 MiB demo stress validation without UI blocking, crashes, or out-of-memory
+      errors.
+- [ ] Responsive layouts and validation in a real Safari installation remain
+      pending because no Safari-capable device is available.
 
-Synthetic fixtures cover replay UI behavior. Browser parser integration also
-uses `test_demo.dem`, a public Mirage fixture already tracked and licensed
-inside the pinned `demoparser2` submodule; it is not copied into the root
-repository or published as user data. Private demos remain strictly excluded.
+Synthetic fixtures cover replay UI behavior, invalid and truncated files, POV and
+Source 1 recordings, unsupported maps, and near-limit/oversized files around the
+exact 500 MiB boundary.
+Browser parser integration also uses `test_demo.dem`, a public Mirage fixture
+already tracked and licensed inside the pinned `demoparser2` submodule; it is not
+copied into the root repository or published as user data. Private demos remain
+strictly excluded.
 
 For a local-only acceptance run with a private demo, set
 `OPENREPLAY_PRIVATE_DEMO` to a file under `fixtures/private/`. The optional
@@ -203,8 +208,9 @@ The current pinned artifact was also exercised end to end against that
 60,601,900-byte fixture: 10 players, 10 rounds, 71 match events, 5,157 sampled
 frames, and 51,531 finite present-player states were normalized in about 1.03
 seconds on the development machine, with every replay event tick represented.
-This proves parser compatibility for the public fixture; it does not replace
-the private pre-release acceptance pass or a dedicated 500 MiB stress test.
+This proves parser compatibility for the public fixture. The private Active Duty
+acceptance pass and dedicated 500 MiB stress validation were completed locally;
+the demos remain ignored and are never published.
 
 ## CI and deployment
 
@@ -237,9 +243,9 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request. Report
 vulnerabilities privately as described in [`SECURITY.md`](SECURITY.md), and do
 not attach a private demo to a public issue.
 
-The release roadmap is tracked in [`ROADMAP.md`](ROADMAP.md). The current
-priority after the map-pool expansion is local performance measurement and
-responsive desktop layouts; online ingestion and persistence remain future
+The release roadmap is tracked in [`ROADMAP.md`](ROADMAP.md). The remaining v0.2
+validation priorities are local performance measurement, responsive desktop
+layouts, and real Safari coverage; online ingestion and persistence remain future
 work.
 
 ## Legal

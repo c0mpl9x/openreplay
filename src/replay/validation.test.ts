@@ -42,6 +42,22 @@ describe('demo validation', () => {
     ).toThrowError(expect.objectContaining({ code: 'FILE_TOO_LARGE' }));
   });
 
+  it('accepts a synthetic demo at 500 MiB and rejects one byte over before its header', () => {
+    expect(() =>
+      validateDemoFile(
+        { fileName: 'synthetic-at-limit.dem', size: MAX_DEMO_BYTES },
+        ascii(SOURCE_2_DEMO_SIGNATURE),
+      ),
+    ).not.toThrow();
+
+    expect(() =>
+      validateDemoFile(
+        { fileName: 'synthetic-over-limit.dem', size: MAX_DEMO_BYTES + 1 },
+        new Uint8Array(),
+      ),
+    ).toThrowError(expect.objectContaining({ code: 'FILE_TOO_LARGE' }));
+  });
+
   it('recognizes PBDEMS2 in an ArrayBuffer and a sliced view', () => {
     const signature = ascii(`${SOURCE_2_DEMO_SIGNATURE}more bytes`);
     expect(isSource2DemoSignature(signature.buffer)).toBe(true);
