@@ -1,4 +1,65 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+const MAX_DEMO_BYTES = 500 * 1024 * 1024;
+
+interface SyntheticFile {
+  readonly size: number;
+}
+
+type SyntheticFileList = object;
+
+interface SyntheticFileInput {
+  files: SyntheticFileList;
+  dispatchEvent(event: SyntheticEvent): boolean;
+}
+
+interface SyntheticDataTransfer {
+  readonly items: { add(file: SyntheticFile): void };
+  readonly files: SyntheticFileList;
+}
+
+interface SyntheticEvent {
+  readonly type: string;
+}
+
+interface SyntheticBrowserGlobals {
+  readonly document: {
+    querySelector(selector: string): SyntheticFileInput | null;
+  };
+  readonly File: new (
+    parts: readonly unknown[],
+    name: string,
+    options: { readonly type: string },
+  ) => SyntheticFile;
+  readonly DataTransfer: new () => SyntheticDataTransfer;
+  readonly Event: new (type: string, options: { readonly bubbles: boolean }) => SyntheticEvent;
+}
+
+async function setSyntheticFile(
+  page: Page,
+  name: string,
+  bytes: readonly number[],
+  reportedSize: number,
+): Promise<void> {
+  await page.evaluate(
+    ({ name: fileName, bytes: fileBytes, reportedSize: size }) => {
+      const browser = globalThis as unknown as SyntheticBrowserGlobals;
+      const input = browser.document.querySelector('input[aria-label="Choose a CS2 GOTV demo"]');
+      if (input === null) throw new Error('Demo file input was not found.');
+
+      const file = new browser.File([new Uint8Array(fileBytes)], fileName, {
+        type: 'application/octet-stream',
+      });
+      Object.defineProperty(file, 'size', { configurable: true, value: size });
+
+      const transfer = new browser.DataTransfer();
+      transfer.items.add(file);
+      input.files = transfer.files;
+      input.dispatchEvent(new browser.Event('change', { bubbles: true }));
+    },
+    { name, bytes, reportedSize },
+  );
+}
 
 test('opens the local sample and exercises replay controls', async ({ page }) => {
   await page.goto('./');
@@ -110,4 +171,29 @@ test('rejects a Source 1 demo before starting the parser worker', async ({ page 
 
   await expect(page.getByRole('alert')).toContainText('UNSUPPORTED_DEMO_TYPE');
   await expect(page.getByRole('alert')).toContainText('Source 1');
+});
+
+test('rejects a synthetic demo over 500 MiB before parsing or uploading it', async ({ page }) => {
+  const nonLocalRequests: string[] = [];
+  const writes: string[] = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.hostname !== '127.0.0.1') nonLocalRequests.push(request.url());
+    if (!['GET', 'HEAD'].includes(request.method()))
+      writes.push(`${request.method()} ${request.url()}`);
+  });
+
+  await page.goto('./');
+  await page.getByLabel('Choose a CS2 GOTV demo').waitFor();
+  await setSyntheticFile(
+    page,
+    'synthetic-over-limit.dem',
+    [0x50, 0x42, 0x44, 0x45, 0x4d, 0x53, 0x32, 0x00],
+    MAX_DEMO_BYTES + 1,
+  );
+
+  await expect(page.getByRole('alert')).toContainText('FILE_TOO_LARGE');
+  await expect(page.getByRole('alert')).toContainText('500 MiB');
+  expect(nonLocalRequests).toEqual([]);
+  expect(writes).toEqual([]);
 });

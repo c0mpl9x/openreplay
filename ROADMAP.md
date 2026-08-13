@@ -13,18 +13,21 @@ GitHub artifacts.
 
 ## v0.2 — Compatibility and stability
 
-- Exercise the WASM worker in WebKit/Safari when the runtime is viable.
-- Add public or synthetic coverage for truncated, invalid, POV, Source 1,
-  near-limit, and unsupported-map demos.
-- Harden cancellation, reload, consecutive opens, memory release, and error
-  recovery.
-- Measure parse time and memory locally without telemetry.
-- Validate responsive layouts and supported desktop browsers.
-- Support the current Active Duty pool with compatible fixtures and recorded
-  map-data provenance: Ancient, Anubis, Cache, Dust II, Inferno, Mirage, and
-  Nuke (including Nuke's upper and lower levels).
+- [x] Exercise the WASM worker in Playwright WebKit. Validation in a real Safari
+      installation remains a separate pending check.
+- [x] Add public or synthetic coverage for truncated, invalid, POV, Source 1,
+      near-limit, oversized, and unsupported-map demos.
+- [x] Harden cancellation, reload, consecutive opens, memory release, and error
+      recovery.
+- [ ] Measure parse time and memory locally without telemetry.
+- [ ] Validate responsive layouts and supported desktop browsers. Real Safari
+      validation remains pending because no Safari-capable device is available.
+- [x] Support the current Active Duty pool with compatible fixtures and recorded
+      map-data provenance: Ancient, Anubis, Cache, Dust II, Inferno, Mirage, and
+      Nuke (including Nuke's upper and lower levels).
+- [x] Complete a dedicated stress validation with a demo at the 500 MiB limit.
 
-### v0.2 compatibility fixes in progress
+### v0.2 compatibility fixes completed
 
 - [x] Nuke: render upper and lower radars side by side so players remain visible
       when a replay contains players on both levels.
